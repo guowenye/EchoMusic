@@ -63,7 +63,7 @@ export const createResolver = (
   ): Promise<SongRelateGood[]> => {
     const existing = track.relateGoods ?? [];
     if (existing.length > 0 && !options?.forceRefresh) return existing;
-    if (!track.hash || track.source === 'cloud') return existing;
+    if (!track.hash || track.source === 'cloud' || track.source === 'local') return existing;
 
     const requestKey = `${track.hash}:${track.albumId ?? ''}`;
     const pending = privilegeLiteRequests.get(requestKey);
@@ -136,6 +136,15 @@ export const createResolver = (
         effect: state.currentResolvedAudioEffect,
         loudness: null,
       };
+    }
+
+    // 本地歌曲直接播放文件路径，不经过任何在线音源解析
+    if (track.source === 'local') {
+      const localUrl = String(track.filePath ?? track.audioUrl ?? '').trim();
+      if (!localUrl) {
+        logger.warn('PlayerResolver', 'Local track has no file path', summarizeSong(track));
+      }
+      return { url: localUrl, quality: null, effect: 'none', loudness: null };
     }
 
     const audioQuality = getEffectiveAudioQuality();
@@ -257,7 +266,7 @@ export const createResolver = (
   };
 
   const fetchClimaxMarks = async (track: Song) => {
-    if (!track.hash) {
+    if (!track.hash || track.source === 'local') {
       state.climaxMarks = [];
       return;
     }

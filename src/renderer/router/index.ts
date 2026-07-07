@@ -84,6 +84,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/Cloud.vue'),
       },
       {
+        path: 'local-music',
+        name: 'local-music',
+        component: () => import('@/views/LocalMusic.vue'),
+        meta: { title: '本地音乐' },
+      },
+      {
         path: 'profile',
         name: 'profile',
         component: () => import('@/views/Profile.vue'),

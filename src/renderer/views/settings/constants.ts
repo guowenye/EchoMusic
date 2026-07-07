@@ -4,6 +4,7 @@ import type { CloseBehavior, ThemeMode } from '../../../shared/app';
 import {
   iconDeviceSpeaker,
   iconFlask,
+  iconFolderOpen,
   iconInfo,
   iconKeyboard,
   iconPalette,
@@ -19,6 +20,7 @@ export const sectionTitles = {
   font: { label: '字体设置', icon: null },
   playback: { label: '播放体验', icon: iconPlayerPlay },
   quality: { label: '播放音质', icon: iconVolume2 },
+  localMusic: { label: '本地音乐', icon: iconFolderOpen },
   pageLyric: { label: '页面歌词', icon: null },
   desktopLyric: { label: '桌面歌词', icon: iconTypography },
   shortcuts: { label: '快捷键', icon: iconKeyboard },

@@ -11,6 +11,7 @@ export type PlaybackQueueType =
   | 'search'
   | 'history'
   | 'cloud'
+  | 'local'
   | 'fm'
   | 'manual';
 

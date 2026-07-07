@@ -31,6 +31,8 @@ export interface Song {
   mixSongId: string | number;
   fileId?: string | number;
   source?: string;
+  /** 本地歌曲的文件绝对路径（source === 'local' 时存在） */
+  filePath?: string;
   lyric?: string;
   lyricSnippet?: string;
   privilege?: number;

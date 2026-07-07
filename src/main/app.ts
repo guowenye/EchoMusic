@@ -19,6 +19,7 @@ import { registerAudioSpectrumIpc, unregisterAudioSpectrumIpc } from './audioSpe
 import { initMediaControls, destroyMediaControls } from './mediaControls';
 import { cleanupMiniPlayer } from './miniPlayer';
 import { initPowerMonitor } from './powerMonitor';
+import { disposeLocalMusicService } from './localMusic';
 import { clearPluginRuntimeSession, setPluginSafeMode } from './plugins';
 import { applyDesktopAppIcon, applyTaskbarShortcutIcon, refreshAppIconConfig } from './appIcons';
 import { setupThumbarButtons } from './thumbar';
@@ -234,6 +235,7 @@ if (!gotTheLock) {
       globalShortcut.unregisterAll();
       clearPluginRuntimeSession();
       unregisterAudioSpectrumIpc();
+      disposeLocalMusicService();
       // 清理桌面歌词模块的事件监听器和定时器
       cleanupDesktopLyric();
       // 清理 mini 播放器模块的事件监听器和定时器

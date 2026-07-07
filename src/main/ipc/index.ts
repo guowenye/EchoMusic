@@ -11,6 +11,7 @@ import { registerMiniPlayerHandlers } from '../miniPlayer';
 import { registerNowPlayingHandlers } from '../nowPlaying';
 import { registerExternalHandlers } from './external';
 import { registerStorageHandlers } from './storage';
+import { registerLocalMusicHandlers } from './localMusic';
 import { registerPluginHandlers } from './plugins';
 import { registerPluginWindowHandlers } from '../pluginWindows';
 import { registerShareHandlers } from './share';
@@ -32,6 +33,7 @@ export const registerIpcHandlers = (context: IpcContext) => {
   registerMiniPlayerHandlers();
   registerExternalHandlers();
   registerStorageHandlers();
+  registerLocalMusicHandlers(context);
   registerPluginHandlers(context);
   registerPluginWindowHandlers();
   registerShareHandlers();

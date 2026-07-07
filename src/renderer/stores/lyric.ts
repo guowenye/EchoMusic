@@ -1000,6 +1000,29 @@ export const useLyricStore = defineStore('lyric', {
           return;
         }
 
+        // 本地歌曲：读取同名 .lrc 或内嵌歌词标签，不请求在线歌词接口
+        if (options?.track?.source === 'local') {
+          const filePath = String(options.track.filePath ?? '').trim();
+          let localLyric = '';
+          if (filePath && window.electron?.localMusic) {
+            try {
+              localLyric = String((await window.electron.localMusic.getLyric(filePath)) ?? '');
+            } catch {
+              localLyric = '';
+            }
+          }
+          if (requestSerial !== this.requestSerial) return;
+          if (localLyric.trim()) {
+            const detail = { decodeContent: localLyric };
+            this.parseLyricContent(detail, normalizedHash, { detailResolved: true });
+            this.currentCandidateKey = 'local:file';
+            rememberLyricResult(cacheKey, { detail, currentCandidateKey: 'local:file' });
+          } else {
+            this.clear(normalizedHash, '暂无歌词');
+          }
+          return;
+        }
+
         const canUsePluginLyric = !isUsableCandidate(manualCandidate);
         const preferPluginLyric =
           canUsePluginLyric && (Boolean(options?.force) || shouldPreferPluginLyric(options?.track));

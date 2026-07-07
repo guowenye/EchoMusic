@@ -34,6 +34,11 @@ import type {
   AudioSpectrumSubscribeResult,
 } from '../shared/audio-spectrum';
 import type { LogSettings } from '../shared/logging';
+import type {
+  LocalMusicAddFolderResult,
+  LocalMusicScanProgress,
+  LocalMusicState,
+} from '../shared/localMusic';
 import type { ResolvePlaylistRequest, ResolvePlaylistResponse } from '../shared/external';
 import type { ShareCaptureRect, ShareTarget } from '../shared/share';
 import type {
@@ -219,6 +224,29 @@ contextBridge.exposeInMainWorld('electron', {
   },
   fonts: {
     getAll: () => ipcRenderer.invoke('get-all-fonts') as Promise<string[]>,
+  },
+  localMusic: {
+    getState: () => ipcRenderer.invoke('local-music:get-state') as Promise<LocalMusicState>,
+    addFolder: () =>
+      ipcRenderer.invoke('local-music:add-folder') as Promise<LocalMusicAddFolderResult>,
+    removeFolder: (folderPath: string) =>
+      ipcRenderer.invoke('local-music:remove-folder', folderPath) as Promise<LocalMusicState>,
+    rescan: () => ipcRenderer.invoke('local-music:rescan') as Promise<{ ok: boolean }>,
+    getLyric: (filePath: string) =>
+      ipcRenderer.invoke('local-music:get-lyric', filePath) as Promise<string>,
+    reveal: (filePath: string) =>
+      ipcRenderer.invoke('local-music:reveal', filePath) as Promise<boolean>,
+    onUpdated: (func: (state: LocalMusicState) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, state: LocalMusicState) => func(state);
+      ipcRenderer.on('local-music:updated', listener);
+      return () => ipcRenderer.removeListener('local-music:updated', listener);
+    },
+    onScanProgress: (func: (progress: LocalMusicScanProgress) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, progress: LocalMusicScanProgress) =>
+        func(progress);
+      ipcRenderer.on('local-music:scan-progress', listener);
+      return () => ipcRenderer.removeListener('local-music:scan-progress', listener);
+    },
   },
   audioEffects: {
     importImpulseResponse: () =>

@@ -12,7 +12,9 @@ import { useUpdateStore } from './stores/update';
 import { useThemeStore } from './stores/theme';
 import { usePlaylistStore } from './stores/playlist';
 import { useHistoryStore } from './stores/historyStore';
+import { useLocalMusicStore } from './stores/local';
 import { useToastStore } from './stores/toast';
+import { registerLocalMusicContextMenu } from '@/utils/localMusic';
 import { waitForSqlitePersistHydration } from './stores/sqlitePersist';
 import { initShortcutSync, syncGlobalShortcuts } from '@/utils/shortcuts';
 import { initDesktopLyricSync } from '@/desktopLyric/sync';
@@ -246,6 +248,8 @@ onMounted(async () => {
     }, 4000);
   }
   void refreshPlugins();
+  registerLocalMusicContextMenu();
+  void useLocalMusicStore().hydrate();
   scheduleClipboardShareCheck();
   colorSchemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   colorSchemeMediaQuery.addEventListener('change', updateTheme);

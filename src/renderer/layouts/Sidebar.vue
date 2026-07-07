@@ -17,6 +17,7 @@ import {
   iconClock,
   iconCloud,
   iconCompass,
+  iconDeviceLaptop,
   iconExternalLink,
   iconHeart,
   iconPlaylistAdd,
@@ -87,6 +88,7 @@ const iconMap = {
   clock: iconClock,
   cloud: iconCloud,
   heart: iconHeart,
+  deviceLaptop: iconDeviceLaptop,
 } as const;
 
 type BuiltinSidebarIcon = keyof typeof iconMap;
@@ -172,6 +174,14 @@ const builtinSidebarSections = [
         path: '/main/cloud',
         builtinIcon: 'cloud',
         order: 30,
+      },
+      {
+        id: 'local-music',
+        key: 'local-music',
+        title: '本地音乐',
+        path: '/main/local-music',
+        builtinIcon: 'deviceLaptop',
+        order: 35,
       },
       {
         id: 'history',

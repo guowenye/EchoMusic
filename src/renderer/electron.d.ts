@@ -31,6 +31,11 @@ import type {
   AudioSpectrumStatus,
 } from '../shared/audio-spectrum';
 import type { LogSettings } from '../shared/logging';
+import type {
+  LocalMusicAddFolderResult,
+  LocalMusicScanProgress,
+  LocalMusicState,
+} from '../shared/localMusic';
 import type { ResolvePlaylistRequest, ResolvePlaylistResponse } from '../shared/external';
 import type { ShareCaptureRect, ShareTarget } from '../shared/share';
 import type {
@@ -144,6 +149,16 @@ export interface IElectronAPI {
   };
   fonts: {
     getAll: () => Promise<string[]>;
+  };
+  localMusic: {
+    getState: () => Promise<LocalMusicState>;
+    addFolder: () => Promise<LocalMusicAddFolderResult>;
+    removeFolder: (folderPath: string) => Promise<LocalMusicState>;
+    rescan: () => Promise<{ ok: boolean }>;
+    getLyric: (filePath: string) => Promise<string>;
+    reveal: (filePath: string) => Promise<boolean>;
+    onUpdated: (func: (state: LocalMusicState) => void) => () => void;
+    onScanProgress: (func: (progress: LocalMusicScanProgress) => void) => () => void;
   };
   audioEffects: {
     importImpulseResponse: () => Promise<ImportImpulseResponseResult>;

@@ -12,8 +12,10 @@ import DisclaimerDialog from '@/components/app/DisclaimerDialog.vue';
 import { iconArrowUp, iconSearch, iconX } from '@/icons';
 import { marked } from 'marked';
 import { sanitizeHtml } from '@/utils/sanitize';
+import { useRoute } from 'vue-router';
 import AppearanceSettingsSection from './settings/components/AppearanceSettingsSection.vue';
 import FontSettingsSection from './settings/components/FontSettingsSection.vue';
+import LocalMusicSettingsSection from './settings/components/LocalMusicSettingsSection.vue';
 import PlaybackSettingsSection from './settings/components/PlaybackSettingsSection.vue';
 import QualitySettingsSection from './settings/components/QualitySettingsSection.vue';
 import PageLyricSettingsSection from './settings/components/PageLyricSettingsSection.vue';
@@ -26,6 +28,7 @@ import DataSettingsSection from './settings/components/DataSettingsSection.vue';
 import AboutSettingsSection from './settings/components/AboutSettingsSection.vue';
 import { shortcutItems } from './settings/constants';
 
+const route = useRoute();
 const settingStore = useSettingStore();
 const updateStore = useUpdateStore();
 const desktopLyricStore = useDesktopLyricStore();
@@ -132,6 +135,11 @@ onMounted(() => {
   document.addEventListener('pointerdown', handleSettingsSearchPointerDown, true);
   nextTick(() => {
     indicatorReady.value = true;
+    // 支持通过 ?section=xxx 直达指定设置分区（如本地音乐页的快捷入口）
+    const targetSection = String(route.query.section ?? '').trim();
+    if (targetSection && settingsSections.value.some((section) => section.id === targetSection)) {
+      scrollToSection(targetSection);
+    }
   });
 });
 
@@ -255,6 +263,24 @@ const builtinSettingsSections = computed<SettingsRenderSection[]>(() => [
       'DSD 臻品音质',
       'flac',
       '无损',
+    ],
+  },
+  {
+    id: 'localMusic',
+    label: '本地音乐',
+    order: 450,
+    component: LocalMusicSettingsSection,
+    searchKeywords: [
+      '本地音乐',
+      '本地歌曲',
+      '本地歌曲目录',
+      '目录管理',
+      '添加文件夹',
+      '删除目录',
+      '扫描',
+      '重新扫描',
+      '实时同步',
+      'm3u',
     ],
   },
   {

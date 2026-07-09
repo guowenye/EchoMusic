@@ -4,27 +4,12 @@ import type { useSettingStore } from '../setting';
 import type { PlayerEngine } from '@/utils/player';
 import type { OutputDeviceDisconnectBehavior } from '../../types';
 
-let outputDeviceChangeHandler:
-  | ((devices: Array<{ name: string; description: string }>) => void)
-  | null = null;
-
 export const createDeviceManager = (
   state: PlayerState,
   engine: PlayerEngine,
   settingStore: ReturnType<typeof useSettingStore>,
 ) => {
-  const clearOutputDeviceRefreshTimer = () => {
-    if (state.outputDeviceRefreshTimer !== null) {
-      window.clearTimeout(state.outputDeviceRefreshTimer);
-      state.outputDeviceRefreshTimer = null;
-    }
-  };
-
-  const unregisterOutputDeviceWatcher = () => {
-    outputDeviceChangeHandler = null;
-    state.outputDeviceWatcherRegistered = false;
-    clearOutputDeviceRefreshTimer();
-  };
+  let refreshingOutputDevices = false;
 
   const applyOutputDevice = async (deviceId: string, options?: { persistSelection?: boolean }) => {
     const persistSelection = options?.persistSelection ?? true;
@@ -75,6 +60,8 @@ export const createDeviceManager = (
   const refreshOutputDevices = async (
     mpvDevicesArg?: Array<{ name: string; description: string }>,
   ) => {
+    if (refreshingOutputDevices) return;
+    refreshingOutputDevices = true;
     const fallbackOptions = [{ label: '系统默认', value: 'default' }];
     try {
       let mpvDevices: Array<{ name: string; description: string }>;
@@ -124,30 +111,13 @@ export const createDeviceManager = (
     } catch (error) {
       logger.warn('PlayerDevice', 'Refresh output devices failed:', error);
       settingStore.outputDevices = fallbackOptions;
+    } finally {
+      refreshingOutputDevices = false;
     }
   };
 
-  const registerOutputDeviceWatcher = () => {
-    if (state.outputDeviceWatcherRegistered) return;
-    state.outputDeviceWatcherRegistered = true;
-
-    if (!window.electron?.mpv?.onAudioDeviceListChanged) return;
-
-    outputDeviceChangeHandler = () => {
-      clearOutputDeviceRefreshTimer();
-      state.outputDeviceRefreshTimer = window.setTimeout(() => {
-        state.outputDeviceRefreshTimer = null;
-        void refreshOutputDevices();
-      }, 800);
-    };
-    window.electron.mpv.onAudioDeviceListChanged(outputDeviceChangeHandler);
-  };
-
   return {
-    clearOutputDeviceRefreshTimer,
-    unregisterOutputDeviceWatcher,
     refreshOutputDevices,
     applyOutputDevice,
-    registerOutputDeviceWatcher,
   };
 };

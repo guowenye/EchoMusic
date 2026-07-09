@@ -33,6 +33,7 @@ interface MpvAddon {
         message?: string;
         prefix?: string;
         level?: string;
+        devices?: Array<{ name: string; description: string }>;
       },
     ) => void,
   ): void;

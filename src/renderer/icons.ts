@@ -1,5 +1,6 @@
 import type { IconifyIcon } from '@iconify/types';
 import chevronDown from '@iconify/icons-tabler/chevron-down';
+import database from '@iconify/icons-tabler/database';
 import chevronUp from '@iconify/icons-tabler/chevron-up';
 import heart from '@iconify/icons-tabler/heart';
 import heartFilled from '@iconify/icons-tabler/heart-filled';
@@ -190,6 +191,7 @@ export const iconDotsVertical = dotsVertical as IconifyIcon;
 export const iconPictureInPicture = pictureInPicture as IconifyIcon;
 export const iconPinned = pinned as IconifyIcon;
 export const iconPlugin = puzzle as IconifyIcon;
+export const iconDatabase = database as IconifyIcon;
 export const iconFolderOpen = folderOpen as IconifyIcon;
 export const iconFolderPlus = folderPlus as IconifyIcon;
 export const iconDeviceLaptop = deviceLaptop as IconifyIcon;

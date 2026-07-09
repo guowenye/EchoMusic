@@ -2,6 +2,7 @@ import type { AccentMode } from '@/stores/theme';
 import type { AudioQualityValue, OutputDeviceDisconnectBehavior, ShortcutItem } from '@/types';
 import type { CloseBehavior, ThemeMode } from '../../../shared/app';
 import {
+  iconDatabase,
   iconDeviceSpeaker,
   iconFlask,
   iconFolderOpen,
@@ -20,6 +21,7 @@ export const sectionTitles = {
   font: { label: '字体设置', icon: null },
   playback: { label: '播放体验', icon: iconPlayerPlay },
   quality: { label: '播放音质', icon: iconVolume2 },
+  musicCache: { label: '缓存设置', icon: iconDatabase },
   localMusic: { label: '本地音乐', icon: iconFolderOpen },
   pageLyric: { label: '页面歌词', icon: null },
   desktopLyric: { label: '桌面歌词', icon: iconTypography },

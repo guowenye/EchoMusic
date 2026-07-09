@@ -12,6 +12,7 @@ import { registerNowPlayingHandlers } from '../nowPlaying';
 import { registerExternalHandlers } from './external';
 import { registerStorageHandlers } from './storage';
 import { registerLocalMusicHandlers } from './localMusic';
+import { registerMusicCacheHandlers } from './musicCache';
 import { registerPluginHandlers } from './plugins';
 import { registerPluginWindowHandlers } from '../pluginWindows';
 import { registerShareHandlers } from './share';
@@ -34,6 +35,7 @@ export const registerIpcHandlers = (context: IpcContext) => {
   registerExternalHandlers();
   registerStorageHandlers();
   registerLocalMusicHandlers(context);
+  registerMusicCacheHandlers(context);
   registerPluginHandlers(context);
   registerPluginWindowHandlers();
   registerShareHandlers();

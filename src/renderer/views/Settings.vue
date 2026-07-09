@@ -18,6 +18,7 @@ import FontSettingsSection from './settings/components/FontSettingsSection.vue';
 import LocalMusicSettingsSection from './settings/components/LocalMusicSettingsSection.vue';
 import PlaybackSettingsSection from './settings/components/PlaybackSettingsSection.vue';
 import QualitySettingsSection from './settings/components/QualitySettingsSection.vue';
+import MusicCacheSettingsSection from './settings/components/MusicCacheSettingsSection.vue';
 import PageLyricSettingsSection from './settings/components/PageLyricSettingsSection.vue';
 import DesktopLyricSettingsSection from './settings/components/DesktopLyricSettingsSection.vue';
 import ShortcutSettingsSection from './settings/components/ShortcutSettingsSection.vue';
@@ -263,6 +264,24 @@ const builtinSettingsSections = computed<SettingsRenderSection[]>(() => [
       'DSD 臻品音质',
       'flac',
       '无损',
+    ],
+  },
+  {
+    id: 'musicCache',
+    label: '缓存设置',
+    order: 430,
+    component: MusicCacheSettingsSection,
+    searchKeywords: [
+      '歌曲缓存',
+      '缓存设置',
+      '缓存目录',
+      '缓存容量',
+      '容量上限',
+      '清空缓存',
+      '已用空间',
+      '离线播放',
+      '不重复下载',
+      'LRU',
     ],
   },
   {

@@ -39,6 +39,14 @@ import type {
   LocalMusicScanProgress,
   LocalMusicState,
 } from '../shared/localMusic';
+import type {
+  MusicCacheChooseDirResult,
+  MusicCacheClearResult,
+  MusicCacheConfig,
+  MusicCacheLookupResult,
+  MusicCacheStats,
+  MusicCacheStoreRequest,
+} from '../shared/musicCache';
 import type { NetworkSettings } from '../shared/network';
 import type { ResolvePlaylistRequest, ResolvePlaylistResponse } from '../shared/external';
 import type { ShareCaptureRect, ShareTarget } from '../shared/share';
@@ -248,6 +256,22 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.on('local-music:scan-progress', listener);
       return () => ipcRenderer.removeListener('local-music:scan-progress', listener);
     },
+  },
+  musicCache: {
+    lookup: (config: MusicCacheConfig, key: string) =>
+      ipcRenderer.invoke('music-cache:lookup', config, key) as Promise<MusicCacheLookupResult>,
+    store: (config: MusicCacheConfig, request: MusicCacheStoreRequest) =>
+      ipcRenderer.invoke('music-cache:store', config, request) as Promise<void>,
+    remove: (config: MusicCacheConfig, key: string) =>
+      ipcRenderer.invoke('music-cache:remove', config, key) as Promise<boolean>,
+    stats: (config: MusicCacheConfig) =>
+      ipcRenderer.invoke('music-cache:stats', config) as Promise<MusicCacheStats>,
+    clear: (config: MusicCacheConfig) =>
+      ipcRenderer.invoke('music-cache:clear', config) as Promise<MusicCacheClearResult>,
+    chooseDir: () =>
+      ipcRenderer.invoke('music-cache:choose-dir') as Promise<MusicCacheChooseDirResult>,
+    reveal: (config: MusicCacheConfig) =>
+      ipcRenderer.invoke('music-cache:reveal', config) as Promise<boolean>,
   },
   audioEffects: {
     importImpulseResponse: () =>

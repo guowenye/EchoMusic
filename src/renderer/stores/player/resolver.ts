@@ -7,6 +7,15 @@ import {
   resolveEffectiveSongQuality,
 } from '@/utils/song';
 import { resolvePluginAudioSource } from '@/plugins/audioSource';
+import {
+  buildMusicCacheKey,
+  getMusicCacheConfig,
+  isCacheableAudioUrl,
+  isMusicCacheAvailable,
+  lookupCachedAudio,
+  removeCachedAudio,
+  requestCacheStore,
+} from '@/utils/musicCache';
 import type { AudioQualityValue } from '../../types';
 import type { PlayerState } from './state';
 import {
@@ -118,38 +127,10 @@ export const createResolver = (
     return proxyUrl;
   };
 
-  const resolveAudioUrl = async (
+  const resolveAudioUrlOnline = async (
     track: Song,
     options?: { forceReload?: boolean },
   ): Promise<ResolvedAudioSource> => {
-    const canReuseCurrentSource =
-      !!track.audioUrl &&
-      !options?.forceReload &&
-      !!state.currentTrackId &&
-      String(track.id) === String(state.currentTrackId) &&
-      track.audioUrl === state.currentAudioUrl;
-
-    if (canReuseCurrentSource) {
-      return {
-        url: track.audioUrl!,
-        urls: state.currentAudioCandidateUrls.length
-          ? [...state.currentAudioCandidateUrls]
-          : [track.audioUrl!],
-        quality: state.currentResolvedAudioQuality,
-        effect: state.currentResolvedAudioEffect,
-        loudness: null,
-      };
-    }
-
-    // 本地歌曲直接播放文件路径，不经过任何在线音源解析
-    if (track.source === 'local') {
-      const localUrl = String(track.filePath ?? track.audioUrl ?? '').trim();
-      if (!localUrl) {
-        logger.warn('PlayerResolver', 'Local track has no file path', summarizeSong(track));
-      }
-      return { url: localUrl, quality: null, effect: 'none', loudness: null };
-    }
-
     const audioQuality = getEffectiveAudioQuality();
     const audioEffect = normalizeEffect(state.audioEffect);
     const compatibilityMode = settingStore.compatibilityMode ?? true;
@@ -272,6 +253,91 @@ export const createResolver = (
     }
 
     return { url: '', quality: null, effect: 'none', loudness: null };
+  };
+
+  const resolveAudioUrl = async (
+    track: Song,
+    options?: { forceReload?: boolean },
+  ): Promise<ResolvedAudioSource> => {
+    const canReuseCurrentSource =
+      !!track.audioUrl &&
+      !options?.forceReload &&
+      !!state.currentTrackId &&
+      String(track.id) === String(state.currentTrackId) &&
+      track.audioUrl === state.currentAudioUrl;
+
+    if (canReuseCurrentSource) {
+      return {
+        url: track.audioUrl!,
+        urls: state.currentAudioCandidateUrls.length
+          ? [...state.currentAudioCandidateUrls]
+          : [track.audioUrl!],
+        quality: state.currentResolvedAudioQuality,
+        effect: state.currentResolvedAudioEffect,
+        loudness: null,
+      };
+    }
+
+    // 本地歌曲直接播放文件路径，不经过任何在线音源解析
+    if (track.source === 'local') {
+      const localUrl = String(track.filePath ?? track.audioUrl ?? '').trim();
+      if (!localUrl) {
+        logger.warn('PlayerResolver', 'Local track has no file path', summarizeSong(track));
+      }
+      return { url: localUrl, quality: null, effect: 'none', loudness: null };
+    }
+
+    // 歌曲本地缓存：命中直接播缓存文件，避免重复下载；音效模式（伴唱/环绕等）不走缓存
+    const audioEffect = normalizeEffect(state.audioEffect);
+    const cacheKey =
+      (settingStore.musicCacheEnabled ?? true) && audioEffect === 'none' && isMusicCacheAvailable()
+        ? buildMusicCacheKey(track, getEffectiveAudioQuality())
+        : '';
+    const cacheConfig = cacheKey ? getMusicCacheConfig(settingStore) : null;
+
+    if (cacheKey && cacheConfig) {
+      const cached = await lookupCachedAudio(cacheConfig, cacheKey);
+      if (cached) {
+        // forceReload 且当前播放源就是这份缓存文件时，说明该文件播放异常（如卡死恢复），
+        // 删除缓存记录并回落在线解析；其余情况（换音质刷新/网络场景）直接命中
+        const isReloadingBadCacheFile =
+          Boolean(options?.forceReload) &&
+          String(track.id) === String(state.currentTrackId ?? '') &&
+          state.currentAudioUrl === cached.filePath;
+        if (isReloadingBadCacheFile) {
+          logger.warn('PlayerResolver', 'Drop cached audio after playback issue', {
+            track: summarizeSong(track),
+            file: cached.filePath,
+          });
+          removeCachedAudio(cacheConfig, cacheKey);
+        } else {
+          logger.debug('PlayerResolver', 'Audio cache hit', {
+            track: summarizeSong(track),
+            file: cached.filePath,
+          });
+          return {
+            url: cached.filePath,
+            quality: cached.quality,
+            effect: 'none',
+            loudness: cached.loudness,
+          };
+        }
+      }
+    }
+
+    const resolved = await resolveAudioUrlOnline(track, options);
+
+    // 在线解析成功后后台缓存（不阻塞播放）
+    if (
+      cacheKey &&
+      cacheConfig &&
+      resolved.url &&
+      resolved.effect === 'none' &&
+      isCacheableAudioUrl(resolved.url)
+    ) {
+      requestCacheStore(cacheConfig, cacheKey, track, resolved);
+    }
+    return resolved;
   };
 
   const fetchClimaxMarks = async (track: Song) => {

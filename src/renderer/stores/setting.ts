@@ -112,6 +112,12 @@ export const useSettingStore = defineStore('setting', {
     preventSleep: true,
     defaultAudioQuality: 'high' as AudioQualityValue,
     compatibilityMode: true,
+    // 歌曲本地缓存：播放时自动缓存，再次播放直接读本地文件
+    musicCacheEnabled: true,
+    /** 自定义缓存目录；空 = 默认（软件安装目录下 MusicCache） */
+    musicCacheDir: '',
+    /** 缓存容量上限（MB），超出后按最近最少播放淘汰 */
+    musicCacheMaxSizeMB: 2048,
     globalShortcutsEnabled: false,
     shortcutBindings: {} as Record<string, string>,
     globalShortcutBindings: {} as Record<string, string>,

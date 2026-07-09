@@ -36,6 +36,14 @@ import type {
   LocalMusicScanProgress,
   LocalMusicState,
 } from '../shared/localMusic';
+import type {
+  MusicCacheChooseDirResult,
+  MusicCacheClearResult,
+  MusicCacheConfig,
+  MusicCacheLookupResult,
+  MusicCacheStats,
+  MusicCacheStoreRequest,
+} from '../shared/musicCache';
 import type { NetworkSettings } from '../shared/network';
 import type { ResolvePlaylistRequest, ResolvePlaylistResponse } from '../shared/external';
 import type { ShareCaptureRect, ShareTarget } from '../shared/share';
@@ -160,6 +168,15 @@ export interface IElectronAPI {
     reveal: (filePath: string) => Promise<boolean>;
     onUpdated: (func: (state: LocalMusicState) => void) => () => void;
     onScanProgress: (func: (progress: LocalMusicScanProgress) => void) => () => void;
+  };
+  musicCache?: {
+    lookup: (config: MusicCacheConfig, key: string) => Promise<MusicCacheLookupResult>;
+    store: (config: MusicCacheConfig, request: MusicCacheStoreRequest) => Promise<void>;
+    remove: (config: MusicCacheConfig, key: string) => Promise<boolean>;
+    stats: (config: MusicCacheConfig) => Promise<MusicCacheStats>;
+    clear: (config: MusicCacheConfig) => Promise<MusicCacheClearResult>;
+    chooseDir: () => Promise<MusicCacheChooseDirResult>;
+    reveal: (config: MusicCacheConfig) => Promise<boolean>;
   };
   audioEffects: {
     importImpulseResponse: () => Promise<ImportImpulseResponseResult>;

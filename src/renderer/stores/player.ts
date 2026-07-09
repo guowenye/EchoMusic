@@ -191,6 +191,7 @@ export const usePlayerStore = defineStore(
       clearPlaybackNotice,
     );
     let impulseResponseFailureListenerRegistered = false;
+    let audioDeviceListListenerRegistered = false;
 
     const toggleLyricView = (open?: boolean) => {
       state.isLyricViewOpen = open ?? !state.isLyricViewOpen;
@@ -204,6 +205,13 @@ export const usePlayerStore = defineStore(
       handlingPlaybackEnd = true;
       try {
         if (playlistStore.activeQueue?.id === PERSONAL_FM_QUEUE_ID) {
+          const playedQueuedNext = await playbackManager.playQueuedNextOutsidePersonalFm({
+            track: state.currentTrackSnapshot,
+            playtime: state.duration,
+            isOverplay: true,
+          });
+          if (playedQueuedNext) return;
+
           const nextFmSong = await playlistStore.consumeNextPersonalFmTrack({
             track: state.currentTrackSnapshot,
             playtime: state.duration,
@@ -415,7 +423,12 @@ export const usePlayerStore = defineStore(
           disableActiveImpulseResponse(payload?.path);
         });
       }
-      deviceManager.registerOutputDeviceWatcher();
+      if (!audioDeviceListListenerRegistered) {
+        audioDeviceListListenerRegistered = true;
+        window.electron?.mpv?.onAudioDeviceListChanged?.(() => {
+          void deviceManager.refreshOutputDevices();
+        });
+      }
       void deviceManager.refreshOutputDevices();
 
       let lastMediaSessionSync = 0;

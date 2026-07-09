@@ -34,6 +34,22 @@ export const registerMusicCacheHandlers = (context: IpcContext): void => {
     service.remove(normalizeConfig(config), String(key ?? '')),
   );
 
+  ipcRegistry.registerHandler(
+    'music-cache:store-lyric',
+    (_event, config: unknown, hash: string, content: string) =>
+      service.storeLyric(normalizeConfig(config), String(hash ?? ''), String(content ?? '')),
+  );
+
+  ipcRegistry.registerHandler('music-cache:get-lyric', (_event, config: unknown, hash: string) =>
+    service.getLyric(normalizeConfig(config), String(hash ?? '')),
+  );
+
+  ipcRegistry.registerHandler(
+    'music-cache:store-cover',
+    (_event, config: unknown, hash: string, url: string) =>
+      service.storeCover(normalizeConfig(config), String(hash ?? ''), String(url ?? '')),
+  );
+
   ipcRegistry.registerHandler('music-cache:stats', (_event, config: unknown) =>
     service.stats(normalizeConfig(config)),
   );

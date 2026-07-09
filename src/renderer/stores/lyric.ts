@@ -4,7 +4,9 @@ import logger from '@/utils/logger';
 import { DEFAULT_ACCENT, getNormalizedAccent } from '@/utils/color';
 import type { Song } from '@/models/song';
 import { resolvePluginLyric } from '@/plugins/lyrics';
+import { fetchCachedLyricResult, persistLyricToCache } from '@/utils/musicCache';
 import { useThemeStore } from './theme';
+import { useSettingStore } from './setting';
 
 export interface LyricCharacter {
   text: string;
@@ -889,6 +891,11 @@ export const useLyricStore = defineStore('lyric', {
         detail: resolved.detail,
         currentCandidateKey: this.currentCandidateKey,
       });
+      // 手动选择的歌词同步到歌曲缓存，离线重播沿用该选择
+      persistLyricToCache(useSettingStore(), normalizedHash, {
+        detail: resolved.detail,
+        currentCandidateKey: this.currentCandidateKey,
+      });
       if (options?.remember) {
         this.manualLyricMap[normalizedHash] = compactCandidate(candidate);
       }
@@ -1046,11 +1053,31 @@ export const useLyricStore = defineStore('lyric', {
             detail,
             currentCandidateKey: pluginCandidateKey,
           });
+          persistLyricToCache(useSettingStore(), normalizedHash, {
+            detail,
+            currentCandidateKey: pluginCandidateKey,
+          });
           return true;
         };
 
         if (preferPluginLyric && (await tryResolvePluginLyric())) {
           return;
+        }
+
+        // 歌曲缓存中的歌词副本（仅音频已缓存的歌曲存在）：离线重播可用，在线也免一次接口请求；
+        // 手动指定过歌词的歌曲仍走在线解析，避免覆盖用户选择
+        if (!options?.force && !isUsableCandidate(manualCandidate)) {
+          const diskLyric = await fetchCachedLyricResult(useSettingStore(), normalizedHash);
+          if (requestSerial !== this.requestSerial) return;
+          if (diskLyric?.detail && (diskLyric.detail.decodeContent || diskLyric.detail.lyric)) {
+            this.parseLyricContent(diskLyric.detail, normalizedHash, { detailResolved: true });
+            this.currentCandidateKey = diskLyric.currentCandidateKey;
+            rememberLyricResult(cacheKey, {
+              detail: diskLyric.detail,
+              currentCandidateKey: diskLyric.currentCandidateKey,
+            });
+            return;
+          }
         }
 
         const albumAudioId =
@@ -1100,6 +1127,10 @@ export const useLyricStore = defineStore('lyric', {
         this.parseLyricContent(resolved.detail, normalizedHash, { detailResolved: true });
         this.currentCandidateKey = currentCandidateKey;
         rememberLyricResult(cacheKey, {
+          detail: resolved.detail,
+          currentCandidateKey,
+        });
+        persistLyricToCache(useSettingStore(), normalizedHash, {
           detail: resolved.detail,
           currentCandidateKey,
         });

@@ -171,8 +171,11 @@ export interface IElectronAPI {
   };
   musicCache?: {
     lookup: (config: MusicCacheConfig, key: string) => Promise<MusicCacheLookupResult>;
-    store: (config: MusicCacheConfig, request: MusicCacheStoreRequest) => Promise<void>;
+    store: (config: MusicCacheConfig, request: MusicCacheStoreRequest) => Promise<boolean>;
     remove: (config: MusicCacheConfig, key: string) => Promise<boolean>;
+    storeLyric: (config: MusicCacheConfig, hash: string, content: string) => Promise<boolean>;
+    getLyric: (config: MusicCacheConfig, hash: string) => Promise<string | null>;
+    storeCover: (config: MusicCacheConfig, hash: string, url: string) => Promise<boolean>;
     stats: (config: MusicCacheConfig) => Promise<MusicCacheStats>;
     clear: (config: MusicCacheConfig) => Promise<MusicCacheClearResult>;
     chooseDir: () => Promise<MusicCacheChooseDirResult>;

@@ -136,7 +136,7 @@ onMounted(() => {
       <div class="space-y-1">
         <h3 class="font-semibold">启用歌曲缓存</h3>
         <p class="text-sm text-text-secondary">
-          在线歌曲播放时自动缓存到本地，再次播放直接读取本地文件，不重复下载
+          在线歌曲播放时自动缓存音频、歌词与封面，再次播放直接读取本地文件，离线也能完整显示
         </p>
       </div>
       <Switch v-model="settingStore.musicCacheEnabled" />

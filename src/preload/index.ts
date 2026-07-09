@@ -261,9 +261,15 @@ contextBridge.exposeInMainWorld('electron', {
     lookup: (config: MusicCacheConfig, key: string) =>
       ipcRenderer.invoke('music-cache:lookup', config, key) as Promise<MusicCacheLookupResult>,
     store: (config: MusicCacheConfig, request: MusicCacheStoreRequest) =>
-      ipcRenderer.invoke('music-cache:store', config, request) as Promise<void>,
+      ipcRenderer.invoke('music-cache:store', config, request) as Promise<boolean>,
     remove: (config: MusicCacheConfig, key: string) =>
       ipcRenderer.invoke('music-cache:remove', config, key) as Promise<boolean>,
+    storeLyric: (config: MusicCacheConfig, hash: string, content: string) =>
+      ipcRenderer.invoke('music-cache:store-lyric', config, hash, content) as Promise<boolean>,
+    getLyric: (config: MusicCacheConfig, hash: string) =>
+      ipcRenderer.invoke('music-cache:get-lyric', config, hash) as Promise<string | null>,
+    storeCover: (config: MusicCacheConfig, hash: string, url: string) =>
+      ipcRenderer.invoke('music-cache:store-cover', config, hash, url) as Promise<boolean>,
     stats: (config: MusicCacheConfig) =>
       ipcRenderer.invoke('music-cache:stats', config) as Promise<MusicCacheStats>,
     clear: (config: MusicCacheConfig) =>

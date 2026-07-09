@@ -33,6 +33,19 @@ export interface MusicCacheEntry {
   lastAccessAt: number;
 }
 
+/** 附属资源（歌词/封面）索引记录，按歌曲 hash 维度共享给同曲不同音质的音频记录 */
+export interface MusicCacheAsset {
+  /** 歌曲 hash */
+  hash: string;
+  /** 歌词文件名（相对缓存目录，JSON 内容） */
+  lyricFile?: string;
+  lyricSize?: number;
+  /** 封面图片文件名（相对缓存目录） */
+  coverFile?: string;
+  coverSize?: number;
+  updatedAt: number;
+}
+
 /** 缓存命中结果 */
 export interface MusicCacheLookupResult {
   hit: boolean;
@@ -40,6 +53,8 @@ export interface MusicCacheLookupResult {
   filePath?: string;
   quality?: string | null;
   loudness?: unknown;
+  /** 已缓存封面的绝对路径（无则缺省） */
+  coverPath?: string;
 }
 
 /** 缓存下载请求 */

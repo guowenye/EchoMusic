@@ -15,7 +15,9 @@ import {
   lookupCachedAudio,
   removeCachedAudio,
   requestCacheStore,
+  requestCoverCache,
 } from '@/utils/musicCache';
+import { toLocalFileUrl } from '@/utils/localMusic';
 import type { AudioQualityValue } from '../../types';
 import type { PlayerState } from './state';
 import {
@@ -315,6 +317,13 @@ export const createResolver = (
             track: summarizeSong(track),
             file: cached.filePath,
           });
+          if (cached.coverPath) {
+            // 封面已缓存：改用本地文件展示，离线可用
+            track.coverUrl = toLocalFileUrl(cached.coverPath);
+          } else {
+            // 早期缓存的歌曲可能缺封面，在线时补一份
+            requestCoverCache(cacheConfig, track);
+          }
           return {
             url: cached.filePath,
             quality: cached.quality,

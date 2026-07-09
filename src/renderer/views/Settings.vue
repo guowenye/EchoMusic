@@ -281,6 +281,8 @@ const builtinSettingsSections = computed<SettingsRenderSection[]>(() => [
       '已用空间',
       '离线播放',
       '不重复下载',
+      '歌词缓存',
+      '封面缓存',
       'LRU',
     ],
   },

@@ -39,6 +39,24 @@ export declare function registerEventHandler(callback: ((err: Error | null, arg:
 /** 关闭媒体控制服务 */
 export declare function shutdown(): void
 
+/** 关闭窗口的 iconic 表示（暂停/停止时调用，预览回退为窗口实时画面） */
+export declare function taskbarDisableIconic(hwnd: string): void
+
+/** 开启窗口的 iconic 表示（播放时调用，使任务栏悬停预览改用封面） */
+export declare function taskbarEnableIconic(hwnd: string): void
+
+/** 请求系统重新索取缩略图/预览位图（封面切换或开启 iconic 后调用） */
+export declare function taskbarInvalidate(hwnd: string): void
+
+/** 响应 WM_DWMSENDICONICLIVEPREVIEWBITMAP：写入封面作为 Aero Peek 大预览。 */
+export declare function taskbarSetLivePreview(hwnd: string, image: Buffer, maxWidth: number, maxHeight: number): void
+
+/**
+ * 响应 WM_DWMSENDICONICTHUMBNAIL：写入封面作为悬停缩略图。
+ * `max_width` / `max_height` 来自消息 lParam 指定的最大尺寸。
+ */
+export declare function taskbarSetThumbnail(hwnd: string, image: Buffer, maxWidth: number, maxHeight: number): void
+
 /** 播放进度 */
 export interface TimelinePayload {
   /** 当前播放位置，单位毫秒 */

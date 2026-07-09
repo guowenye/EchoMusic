@@ -11,3 +11,12 @@ ignoredBuiltDependencies:
   - electron-winstaller
   - esbuild
   - vue-demi
+
+# AMLL core 的 @pixi peer 依赖声明为 *，会解析出 v6/v7 混装导致构建失败，强制统一到 7.4.3
+overrides:
+  "@pixi/app": 7.4.3
+  "@pixi/core": 7.4.3
+  "@pixi/display": 7.4.3
+  "@pixi/sprite": 7.4.3
+  "@pixi/filter-blur": 7.4.3
+  "@pixi/filter-color-matrix": 7.4.3

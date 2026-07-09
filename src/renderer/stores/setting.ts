@@ -98,6 +98,12 @@ export const useSettingStore = defineStore('setting', {
     lyricPageBackgroundRhythm: false,
     lyricFilterEnabled: false,
     lyricFilterPattern: '',
+    // Apple Music-like Lyrics 歌词渲染（AMLL）
+    amllEnabled: true,
+    amllSpringEnabled: true,
+    amllHidePassedLines: false,
+    amllWordFadeWidth: 0.5,
+    amllShowRomanWords: true,
     desktopLyricFilterEnabled: false,
     desktopLyricFilterPattern: '',
     autoNext: false,

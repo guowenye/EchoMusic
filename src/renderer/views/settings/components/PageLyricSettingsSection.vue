@@ -5,6 +5,7 @@ import { DEFAULT_LYRIC_FILTER_PATTERN, useLyricStore } from '@/stores/lyric';
 import { useLyricColorPicker } from '@/composables/useLyricColorPicker';
 import Switch from '@/components/ui/Switch.vue';
 import Slider from '@/components/ui/Slider.vue';
+import InputNumber from '@/components/ui/InputNumber.vue';
 import ColorPickerDialog from '@/components/ui/ColorPickerDialog.vue';
 import PageLyricIcon from '@/components/ui/PageLyricIcon.vue';
 import SettingsSectionShell from './SettingsSectionShell.vue';
@@ -13,6 +14,15 @@ import { sectionTitles } from '../constants';
 const settingStore = useSettingStore();
 const lyricStore = useLyricStore();
 const lyricColorPicker = useLyricColorPicker();
+
+const updateAmllWordFadeWidth = (value: string | number) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    settingStore.amllWordFadeWidth = 0.5;
+    return;
+  }
+  settingStore.amllWordFadeWidth = Math.min(4, Math.max(0.01, parsed));
+};
 
 const lyricFontSizeLabel = computed(() => `${Math.round(lyricStore.fontScale * 100)}%`);
 const lyricFontWeightLabel = computed(() => `W${lyricStore.fontWeightValue}`);
@@ -27,6 +37,73 @@ const hasCustomLyricColors = computed(() =>
       <PageLyricIcon :size="20" class="text-primary" />
     </template>
 
+    <div class="settings-item">
+      <div class="flex items-center gap-2">
+        <h3 class="text-[15px] font-bold">Apple Music-like Lyrics</h3>
+        <span
+          class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
+          >Beta</span
+        >
+      </div>
+    </div>
+    <div class="settings-divider"></div>
+    <div class="settings-item">
+      <div class="space-y-1">
+        <h3 class="font-semibold">使用 Apple Music-like Lyrics</h3>
+        <p class="text-sm text-text-secondary">
+          歌词使用 Apple Music-like Lyrics 进行渲染，需要高性能设备
+        </p>
+      </div>
+      <Switch v-model="settingStore.amllEnabled" />
+    </div>
+    <div class="settings-divider"></div>
+    <div class="settings-item">
+      <div class="space-y-1">
+        <h3 class="font-semibold">歌词弹簧效果</h3>
+        <p class="text-sm text-text-secondary">
+          是否使用物理弹簧算法实现歌词动画效果，需要高性能设备
+        </p>
+      </div>
+      <Switch v-model="settingStore.amllSpringEnabled" :disabled="!settingStore.amllEnabled" />
+    </div>
+    <div class="settings-divider"></div>
+    <div class="settings-item">
+      <div class="space-y-1">
+        <h3 class="font-semibold">隐藏已播放歌词</h3>
+        <p class="text-sm text-text-secondary">是否隐藏已播放歌词</p>
+      </div>
+      <Switch v-model="settingStore.amllHidePassedLines" :disabled="!settingStore.amllEnabled" />
+    </div>
+    <div class="settings-divider"></div>
+    <div class="settings-item items-start">
+      <div class="space-y-1">
+        <h3 class="font-semibold">文字动画的渐变宽度</h3>
+        <p class="text-sm text-text-secondary">
+          单位以歌词行的主文字字体大小的倍数为单位<br />
+          默认为 0.5，即一个全角字符的一半宽度<br />
+          若模拟 Apple Music for Android 的效果，可以设为 1<br />
+          若模拟 Apple Music for iPad 的效果，可以设为 0.5<br />
+          若需近乎禁用渐变，可设为非常接近 0 的小数，如 0.01
+        </p>
+      </div>
+      <InputNumber
+        class="w-40"
+        :model-value="settingStore.amllWordFadeWidth"
+        :min="0.01"
+        :max="4"
+        :step="0.1"
+        :disabled="!settingStore.amllEnabled"
+        @update:model-value="updateAmllWordFadeWidth"
+      />
+    </div>
+    <div class="settings-divider"></div>
+    <div class="settings-item">
+      <div class="space-y-1">
+        <h3 class="font-semibold">显示逐字音译</h3>
+      </div>
+      <Switch v-model="settingStore.amllShowRomanWords" :disabled="!settingStore.amllEnabled" />
+    </div>
+    <div class="settings-divider"></div>
     <div class="settings-item">
       <div class="space-y-1">
         <h3 class="font-semibold">显示翻译</h3>

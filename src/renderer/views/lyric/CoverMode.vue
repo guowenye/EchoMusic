@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { usePlayerControls } from '@/composables/usePlayerControls';
 import Cover from '@/components/ui/Cover.vue';
-import LyricScroller from './LyricScroller.vue';
+import LyricRenderer from './LyricRenderer.vue';
 
 const { currentTrack } = usePlayerControls();
 </script>
@@ -21,7 +21,7 @@ const { currentTrack } = usePlayerControls();
 
     <!-- 右侧：歌词 -->
     <section class="lyric-side">
-      <LyricScroller />
+      <LyricRenderer />
     </section>
   </div>
 </template>

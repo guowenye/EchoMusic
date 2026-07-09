@@ -7,7 +7,7 @@ import { useLyricPortrait } from '@/composables/useLyricPortrait';
 import { useLyricBackground } from './composables/useLyricBackground';
 import { coverFallbackRevision } from '@/plugins/coverFallback';
 import { resolveCoverDisplayUrl } from '@/utils/cover';
-import LyricScroller from './LyricScroller.vue';
+import LyricRenderer from './LyricRenderer.vue';
 
 const { currentTrack } = usePlayerControls();
 const settingStore = useSettingStore();
@@ -338,7 +338,7 @@ defineExpose({
 
     <!-- 歌词区域 -->
     <div class="portrait-lyric-area">
-      <LyricScroller :collapsed="isLyricCollapsed" />
+      <LyricRenderer :collapsed="isLyricCollapsed" />
     </div>
 
     <!-- 收起时点击展开的遮罩 -->

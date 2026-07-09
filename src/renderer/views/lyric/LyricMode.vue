@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import LyricScroller from './LyricScroller.vue';
+import LyricRenderer from './LyricRenderer.vue';
 </script>
 
 <template>
   <div class="lyric-mode">
     <!-- 全屏歌词 -->
     <div class="lyric-area">
-      <LyricScroller />
+      <LyricRenderer />
     </div>
   </div>
 </template>

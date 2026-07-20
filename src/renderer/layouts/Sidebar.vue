@@ -59,6 +59,30 @@ const isMac = computed(() => window.electron.platform === 'darwin');
 const isLoggedIn = computed(() => userStore.isLoggedIn);
 const userInfo = computed(() => userStore.info);
 
+interface VipLevelInfo {
+  product_type?: string;
+  is_vip?: number;
+  vip_begin_time?: string | number;
+  vip_end_time?: string | number;
+}
+
+interface VipInfoState {
+  busi_vip?: VipLevelInfo[];
+  [key: string]: unknown;
+}
+
+const vipInfo = computed<VipInfoState>(
+  () => (userInfo.value?.extendsInfo?.vip as VipInfoState | undefined) || {},
+);
+const busiVip = computed<VipLevelInfo[]>(() => vipInfo.value?.busi_vip || []);
+const svip = computed(() => busiVip.value.find((v) => v.product_type === 'svip' && v.is_vip === 1));
+const tvip = computed(() => busiVip.value.find((v) => v.product_type === 'tvip' && v.is_vip === 1));
+const vipBadge = computed(() => {
+  if (svip.value) return 'svip';
+  if (tvip.value) return 'tvip';
+  return 'novip';
+});
+
 const activePlaylistTab = ref(0);
 const showCreateDialog = ref(false);
 const showRemoveDialog = ref(false);
@@ -833,15 +857,19 @@ watch(
             content-class="sidebar-rail-more-menu"
           >
             <template #trigger>
-              <Button
-                variant="unstyled"
-                size="none"
-                type="button"
-                class="sidebar-rail-item"
-                title="歌单操作"
-              >
-                <Icon :icon="iconDotsVertical" width="18" height="18" />
-              </Button>
+              <Tooltip content="歌单操作" side="right">
+                <template #trigger>
+                  <Button
+                    variant="unstyled"
+                    size="none"
+                    type="button"
+                    class="sidebar-rail-item"
+                    title="歌单操作"
+                  >
+                    <Icon :icon="iconDotsVertical" width="18" height="18" />
+                  </Button>
+                </template>
+              </Tooltip>
             </template>
             <div class="sidebar-rail-more-list">
               <div class="sidebar-sort-menu-title">歌单操作</div>
@@ -967,9 +995,28 @@ watch(
                   {{ isLoggedIn ? userInfo?.nickname : '未登录' }}
                 </span>
                 <span
-                  class="truncate text-[9px] text-text-secondary font-medium opacity-60 tracking-wider"
+                  class="truncate text-[9px] text-text-secondary font-medium tracking-wider inline-flex items-center gap-1.5"
                 >
-                  {{ isLoggedIn ? `Lv.${userInfo?.p_grade || 0}` : '点击登录账号' }}
+                  <template v-if="isLoggedIn">
+                    <span class="shrink-0 opacity-60">Lv.{{ userInfo?.p_grade || 0 }}</span>
+                    <span class="h-2.5 w-px shrink-0 bg-text-main/15"></span>
+                    <span
+                      v-if="vipBadge === 'svip'"
+                      class="shrink-0 px-0.75 py-[1.5px] rounded-sm bg-linear-to-r from-orange-500 to-orange-500/80 text-[8px] text-white font-black leading-none"
+                      >SVIP</span
+                    >
+                    <span
+                      v-else-if="vipBadge === 'tvip'"
+                      class="shrink-0 px-0.75 py-[1.5px] rounded-sm bg-linear-to-r from-[#07C160] to-[#07C160]/80 text-[8px] text-white font-black leading-none"
+                      >TVIP</span
+                    >
+                    <span
+                      v-else
+                      class="shrink-0 px-0.75 py-[1.5px] rounded-sm bg-linear-to-r from-gray-500/60 to-gray-500/40 text-[8px] text-white/60 font-black leading-none"
+                      >NOVIP</span
+                    >
+                  </template>
+                  <span v-else class="opacity-60">点击登录账号</span>
                 </span>
               </div>
             </div>

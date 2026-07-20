@@ -12,15 +12,15 @@ import {
   iconPlayerPlay,
   iconPlugin,
   iconShield,
+  iconSlidersHorizontal,
   iconTypography,
-  iconVolume2,
 } from '@/icons';
 
 export const sectionTitles = {
   appearance: { label: '外观与界面', icon: iconPalette },
   font: { label: '字体设置', icon: null },
   playback: { label: '播放体验', icon: iconPlayerPlay },
-  quality: { label: '播放音质', icon: iconVolume2 },
+  player: { label: '播放器设置', icon: iconSlidersHorizontal },
   musicCache: { label: '缓存设置', icon: iconDatabase },
   localMusic: { label: '本地音乐', icon: iconFolderOpen },
   pageLyric: { label: '页面歌词', icon: null },

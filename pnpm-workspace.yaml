@@ -2,15 +2,12 @@ packages:
   - .
 
 allowBuilds:
-  electron-winstaller: set this to true or false
-  esbuild: set this to true or false
-  vue-demi: set this to true or false
+  electron-winstaller: true
+  esbuild: true
+  vue-demi: true
 
 ignoredBuiltDependencies:
   - electron
-  - electron-winstaller
-  - esbuild
-  - vue-demi
 
 # AMLL core 的 @pixi peer 依赖声明为 *，会解析出 v6/v7 混装导致构建失败，强制统一到 7.4.3
 overrides:

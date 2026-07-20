@@ -55,7 +55,7 @@ export default defineConfig({
       {
         entry: 'src/main/index.ts',
         onstart(options) {
-          options.startup();
+          options.startup(['.', '--no-sandbox', '--no-stdio-init']);
         },
         vite: {
           build: {
@@ -67,9 +67,8 @@ export default defineConfig({
                 'font-list',
                 'electron-audio-loopback',
                 '../../native/echo-media-controls',
-                '../../native/echo-mpv-player',
-                '../../native/echo-storage',
-                '../../native/echo-spectrum-capture',
+                '../../native/echo-ffmpeg-player',
+                '../../native/echo-sqlite-store',
               ],
             },
           },

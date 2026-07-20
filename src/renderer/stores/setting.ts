@@ -8,7 +8,11 @@ import type {
   OutputDeviceStatus,
 } from '../types';
 import { buildFontFamily } from '../../shared/font';
-import { normalizeImpulseResponseName, type ImpulseResponseFile } from '../../shared/audio';
+import {
+  DEFAULT_IMPULSE_RESPONSE_MIX,
+  normalizeImpulseResponseName,
+  type ImpulseResponseFile,
+} from '../../shared/audio';
 import {
   DEFAULT_NETWORK_SETTINGS,
   normalizeNetworkSettings,
@@ -84,6 +88,7 @@ export const useSettingStore = defineStore('setting', {
     closeBehavior: 'tray' as CloseBehavior,
     replacePlaylist: false,
     autoPlayOnLaunch: false,
+    gaplessPlayback: true,
     volumeFade: true,
     volumeFadeTime: 1000,
     lyricViewMode: 'cover' as 'cover' | 'portrait' | 'lyric',
@@ -139,7 +144,7 @@ export const useSettingStore = defineStore('setting', {
     volumeNormalizationLufs: -14,
     impulseResponseEnabled: false,
     selectedImpulseResponseId: '',
-    impulseResponseMix: 0.4,
+    impulseResponseMix: DEFAULT_IMPULSE_RESPONSE_MIX,
     impulseResponseFiles: [] as ImpulseResponseFile[],
     impulseResponseSafetyMigrationDone: false,
     keepAliveEnabled: true,
@@ -174,11 +179,11 @@ export const useSettingStore = defineStore('setting', {
     audioCacheSecs: 30,
     audioDemuxerMaxMB: 48,
     audioDemuxerBackMB: 12,
-    audioBufferSecs: 0.5,
+    audioBufferSecs: 2,
     kugouApiProxyUrl: DEFAULT_NETWORK_SETTINGS.kugouApiProxyUrl,
     kugouApiTimeoutSecs: DEFAULT_NETWORK_SETTINGS.kugouApiTimeoutSecs,
-    mpvHttpProxyUrl: DEFAULT_NETWORK_SETTINGS.mpvHttpProxyUrl,
-    mpvNetworkTimeoutSecs: DEFAULT_NETWORK_SETTINGS.mpvNetworkTimeoutSecs,
+    playerHttpProxyUrl: DEFAULT_NETWORK_SETTINGS.playerHttpProxyUrl,
+    playerNetworkTimeoutSecs: DEFAULT_NETWORK_SETTINGS.playerNetworkTimeoutSecs,
     // 播放卡死检测：播放中进度超过该秒数无推进则判定卡死并自动恢复（0=禁用）
     playbackStallTimeout: 8,
     // 同一首歌连续卡死的最大自动恢复次数，超过则回退到失败提示/自动下一首
@@ -342,14 +347,14 @@ export const useSettingStore = defineStore('setting', {
       return normalizeNetworkSettings({
         kugouApiProxyUrl: this.kugouApiProxyUrl,
         kugouApiTimeoutSecs: this.kugouApiTimeoutSecs,
-        mpvHttpProxyUrl: this.mpvHttpProxyUrl,
-        mpvNetworkTimeoutSecs: this.mpvNetworkTimeoutSecs,
+        playerHttpProxyUrl: this.playerHttpProxyUrl,
+        playerNetworkTimeoutSecs: this.playerNetworkTimeoutSecs,
       });
     },
     syncNetworkSettings() {
       const settings = this.getNetworkSettings();
       this.kugouApiTimeoutSecs = settings.kugouApiTimeoutSecs;
-      this.mpvNetworkTimeoutSecs = settings.mpvNetworkTimeoutSecs;
+      this.playerNetworkTimeoutSecs = settings.playerNetworkTimeoutSecs;
       void window.electron?.network?.update(settings);
     },
     enableTemporaryDiagnosticLogging(minutes = 10) {
@@ -433,7 +438,10 @@ export const useSettingStore = defineStore('setting', {
       );
     },
     setImpulseResponseMix(value: number) {
-      this.impulseResponseMix = Math.min(1, Math.max(0.1, Number(value) || 0.4));
+      this.impulseResponseMix = Math.min(
+        1,
+        Math.max(0.1, Number(value) || DEFAULT_IMPULSE_RESPONSE_MIX),
+      );
     },
     getSelectedImpulseResponse(): ImpulseResponseFile | null {
       if (!this.selectedImpulseResponseId) return null;

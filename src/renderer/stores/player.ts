@@ -4,6 +4,7 @@ import { PERSONAL_FM_QUEUE_ID, usePlaylistStore } from './playlist';
 import { useLyricStore } from './lyric';
 import { useSettingStore } from './setting';
 import { useToastStore } from './toast';
+import { useUserStore } from './user';
 import logger from '@/utils/logger';
 import { PlayerEngine, type PlayerEngineEvents } from '@/utils/player';
 import type { Song } from '@/models/song';
@@ -19,6 +20,7 @@ import {
   type PlayerEventName,
   type PlayerEventPayload,
 } from './player/events';
+import type { PlaybackSource, ResolvedAudioSource } from './player/types';
 import {
   buildMediaMeta,
   buildMediaState,
@@ -57,6 +59,42 @@ export const usePlayerStore = defineStore(
     });
     const emitPlayerEvent = (event: PlayerEventName, extra?: Partial<PlayerEventPayload>) =>
       playerEvents.emit(event, getPlayerEventPayload(event, extra));
+
+    const getResolvedPlaybackSources = (resolved: ResolvedAudioSource): PlaybackSource[] => {
+      const fallbackTrackId = resolved.source?.audioTrackId ?? resolved.audioTrackId ?? null;
+      const toSource = (
+        source: PlaybackSource | string | null | undefined,
+      ): PlaybackSource | null => {
+        const candidate =
+          typeof source === 'string'
+            ? { url: source, audioTrackId: fallbackTrackId }
+            : {
+                url: String(source?.url || '').trim(),
+                audioTrackId: source?.audioTrackId ?? fallbackTrackId,
+              };
+        return candidate.url ? candidate : null;
+      };
+      const sources: PlaybackSource[] = [];
+      [
+        toSource(resolved.source) ?? toSource(resolved.url),
+        ...(resolved.sources ?? []),
+        ...(resolved.urls ?? []),
+      ].forEach((item) => {
+        const source = toSource(item);
+        if (!source) return;
+        const key = `${source.audioTrackId ? `mkv:${source.audioTrackId}:` : ''}${source.url}`;
+        if (
+          !sources.some(
+            (existing) =>
+              `${existing.audioTrackId ? `mkv:${existing.audioTrackId}:` : ''}${existing.url}` ===
+              key,
+          )
+        ) {
+          sources.push(source);
+        }
+      });
+      return sources;
+    };
 
     // 切歌与跳转事件来自状态跃迁，覆盖所有调用路径（含快捷键、媒体控制、mini 播放器等）
     watch(
@@ -106,12 +144,18 @@ export const usePlayerStore = defineStore(
       audioManager.setVolume(state.volume);
       if (requestSeq !== state.playbackRequestSeq) return;
 
-      state.currentAudioUrl = resolved.url;
+      const playbackSources = getResolvedPlaybackSources(resolved);
+      const playbackSource = playbackSources[0] ?? { url: resolved.url };
+      state.currentAudioUrl = playbackSource.url;
+      state.currentPlaybackSource = playbackSource;
+      state.currentAudioCandidateUrls = playbackSources.map((source) => source.url);
+      state.currentAudioCandidateSources = playbackSources;
+      state.currentAudioCandidateIndex = 0;
       state.currentResolvedAudioQuality = resolved.quality;
       state.currentResolvedAudioEffect = resolved.effect;
-      track.audioUrl = resolved.url;
+      track.audioUrl = playbackSource.url;
       const savedDuration = state.duration;
-      engine.setSource(resolved.url);
+      await engine.setSource(playbackSource);
       if (!state.duration && !engine.duration && savedDuration) state.duration = savedDuration;
       engine.applyTrackLoudness(resolved.loudness);
       engine.setPlaybackRate(state.playbackRate);
@@ -160,11 +204,19 @@ export const usePlayerStore = defineStore(
       return settingStore.getSelectedImpulseResponse()?.path ?? null;
     };
     const showPlaybackNotice = (code: string, track?: Song | null) => {
+      const userStore = useUserStore();
+      const vipInfo = (userStore.info?.extendsInfo?.vip as any) || {};
+      const busiVip: any[] = vipInfo?.busi_vip || [];
+      const hasSvip = busiVip.some((v: any) => v.product_type === 'svip' && v.is_vip === 1);
+      const hasTvip = busiVip.some((v: any) => v.product_type === 'tvip' && v.is_vip === 1);
+      const isUserNovip = userStore.isLoggedIn && !hasSvip && !hasTvip;
+
       state.playbackNotice = resolvePlaybackNotice({
         code,
         track,
         autoNextEnabled: settingStore.autoNext,
         autoNextDelaySeconds: settingStore.autoNextDelaySeconds,
+        isUserNovip,
       });
     };
 
@@ -232,13 +284,15 @@ export const usePlayerStore = defineStore(
           return;
         }
         if (state.playMode === 'single') {
-          if (state.currentAudioUrl) {
-            engine.setSource(state.currentAudioUrl);
-            void engine.play();
+          if (state.currentPlaybackSource || state.currentAudioUrl) {
+            void engine
+              .setSource(state.currentPlaybackSource ?? state.currentAudioUrl)
+              .then(() => engine.play())
+              .catch((error) => logger.warn('PlayerStore', 'Loop restart failed:', error));
           }
           return;
         }
-        await playbackManager.next();
+        await playbackManager.next({ gaplessTransition: settingStore.gaplessPlayback });
       } finally {
         handlingPlaybackEnd = false;
       }
@@ -252,12 +306,11 @@ export const usePlayerStore = defineStore(
         compatibilityMode: settingStore.compatibilityMode,
         volumeFade: settingStore.volumeFade,
         volumeFadeTime: settingStore.volumeFadeTime,
+        gaplessPlayback: settingStore.gaplessPlayback,
         outputDevice: settingStore.outputDevice,
         exclusiveAudioDevice: settingStore.exclusiveAudioDevice,
-        impulseResponseEnabled: settingStore.impulseResponseEnabled,
-        selectedImpulseResponseId: settingStore.selectedImpulseResponseId,
+        impulseResponsePath: getActiveImpulseResponsePath(),
         impulseResponseMix: settingStore.impulseResponseMix,
-        impulseResponseCount: settingStore.impulseResponseFiles.length,
         playbackStallTimeout: settingStore.playbackStallTimeout,
       };
       // 保存取消函数，以便在需要时清理订阅
@@ -269,14 +322,14 @@ export const usePlayerStore = defineStore(
         const shouldUpdateFade =
           settingStore.volumeFade !== snapshot.volumeFade ||
           settingStore.volumeFadeTime !== snapshot.volumeFadeTime;
+        const shouldUpdateGapless = settingStore.gaplessPlayback !== snapshot.gaplessPlayback;
         const shouldUpdateOutputDevice =
           settingStore.outputDevice !== snapshot.outputDevice ||
           settingStore.exclusiveAudioDevice !== snapshot.exclusiveAudioDevice;
-        const shouldUpdateImpulseResponse =
-          settingStore.impulseResponseEnabled !== snapshot.impulseResponseEnabled ||
-          settingStore.selectedImpulseResponseId !== snapshot.selectedImpulseResponseId ||
-          settingStore.impulseResponseMix !== snapshot.impulseResponseMix ||
-          settingStore.impulseResponseFiles.length !== snapshot.impulseResponseCount;
+        const nextImpulseResponsePath = getActiveImpulseResponsePath();
+        const shouldLoadImpulseResponse = nextImpulseResponsePath !== snapshot.impulseResponsePath;
+        const shouldUpdateImpulseResponseMix =
+          settingStore.impulseResponseMix !== snapshot.impulseResponseMix;
         const shouldUpdateStallTimeout =
           settingStore.playbackStallTimeout !== snapshot.playbackStallTimeout;
         snapshot = {
@@ -284,12 +337,11 @@ export const usePlayerStore = defineStore(
           compatibilityMode: settingStore.compatibilityMode,
           volumeFade: settingStore.volumeFade,
           volumeFadeTime: settingStore.volumeFadeTime,
+          gaplessPlayback: settingStore.gaplessPlayback,
           outputDevice: settingStore.outputDevice,
           exclusiveAudioDevice: settingStore.exclusiveAudioDevice,
-          impulseResponseEnabled: settingStore.impulseResponseEnabled,
-          selectedImpulseResponseId: settingStore.selectedImpulseResponseId,
+          impulseResponsePath: nextImpulseResponsePath,
           impulseResponseMix: settingStore.impulseResponseMix,
-          impulseResponseCount: settingStore.impulseResponseFiles.length,
           playbackStallTimeout: settingStore.playbackStallTimeout,
         };
         if (shouldRefresh) {
@@ -299,13 +351,14 @@ export const usePlayerStore = defineStore(
         if (shouldUpdateFade && state.isPlaying) {
           void audioManager.fadeVolume(state.volume, { durationMs: 120, respectUserVolume: false });
         }
+        if (shouldUpdateGapless && !settingStore.gaplessPlayback)
+          playbackManager.clearGaplessPreparedSource();
         if (shouldUpdateOutputDevice)
           void deviceManager.applyOutputDevice(settingStore.outputDevice);
-        if (shouldUpdateImpulseResponse)
-          audioManager.setImpulseResponse(
-            getActiveImpulseResponsePath(),
-            settingStore.impulseResponseMix,
-          );
+        if (shouldLoadImpulseResponse)
+          audioManager.setImpulseResponse(nextImpulseResponsePath, settingStore.impulseResponseMix);
+        else if (shouldUpdateImpulseResponseMix)
+          audioManager.setImpulseResponseMix(settingStore.impulseResponseMix);
         if (shouldUpdateStallTimeout)
           engine.setStallTimeout(settingStore.playbackStallTimeout ?? 8);
       });
@@ -338,7 +391,9 @@ export const usePlayerStore = defineStore(
       state.isLoading = false;
       state.currentTime = 0;
       state.currentAudioUrl = '';
+      state.currentPlaybackSource = null;
       state.currentAudioCandidateUrls = [];
+      state.currentAudioCandidateSources = [];
       state.currentAudioCandidateIndex = -1;
       state.currentResolvedAudioQuality = null;
       state.currentResolvedAudioEffect = 'none';
@@ -419,13 +474,13 @@ export const usePlayerStore = defineStore(
       registerSettingWatchers();
       if (!impulseResponseFailureListenerRegistered) {
         impulseResponseFailureListenerRegistered = true;
-        window.electron?.mpv?.onImpulseResponseDisabled?.((payload) => {
+        window.electron?.player?.onImpulseResponseDisabled?.((payload) => {
           disableActiveImpulseResponse(payload?.path);
         });
       }
       if (!audioDeviceListListenerRegistered) {
         audioDeviceListListenerRegistered = true;
-        window.electron?.mpv?.onAudioDeviceListChanged?.(() => {
+        window.electron?.player?.onAudioDeviceListChanged?.(() => {
           void deviceManager.refreshOutputDevices();
         });
       }
@@ -440,7 +495,6 @@ export const usePlayerStore = defineStore(
 
       const events: PlayerEngineEvents = {
         timeUpdate: (currentTime) => {
-          if (state.isDraggingProgress) return;
           // 切歌加载护栏：新文件 file-loaded 之前到达的回报多为上一首的残留位置，一律丢弃，
           // 避免进度条切歌瞬间先跳到旧进度再归零
           if (state.awaitingTrackLoad) return;
@@ -454,14 +508,8 @@ export const usePlayerStore = defineStore(
               return;
             state.stallRecovering = false;
           }
-          if (
-            state.seekTargetTime !== null &&
-            Date.now() - state.seekTimestamp < 500 &&
-            currentTime < state.seekTargetTime - 0.5
-          )
-            return;
-          state.seekTargetTime = null;
           state.currentTime = currentTime;
+          playbackManager.prepareGaplessNext();
           const now = Date.now();
           if (now - lastEventTimeUpdate >= EVENT_TIMEUPDATE_MS) {
             lastEventTimeUpdate = now;
@@ -480,7 +528,7 @@ export const usePlayerStore = defineStore(
           // 切歌加载护栏：file-loaded 之前的 duration 回报（含 setSource 的归零与上一首残留）一律丢弃，
           // 真实时长在 fileLoaded 时从引擎补回
           if (state.awaitingTrackLoad) return;
-          // 卡死恢复 reload 期间，mpv 会先回报 duration=0，忽略以免进度条最大值瞬间归零
+          // 卡死恢复 reload 期间，player 会先回报 duration=0，忽略以免进度条最大值瞬间归零
           if (state.stallRecovering && duration <= 0) return;
           state.duration = duration;
           engine.updateMediaPlaybackState(buildMediaState(state));
@@ -492,7 +540,8 @@ export const usePlayerStore = defineStore(
             lyricStore.lyricSyncWarning = false;
           }
         },
-        fileLoaded: () => {
+        fileLoaded: (payload) => {
+          if (playbackManager.activateGaplessPreparedTransition(payload?.seq)) return;
           // 新文件真正加载完成，解除切歌加载护栏，放行后续进度回报
           if (!state.awaitingTrackLoad) return;
           state.awaitingTrackLoad = false;
@@ -528,7 +577,7 @@ export const usePlayerStore = defineStore(
           if (event && !event.isTrusted && !(event as any)?.detail) return;
           void (async () => {
             const triedFallback = await playbackManager.tryNextAudioCandidate({
-              reason: 'mpv-error',
+              reason: 'player-error',
               position: state.currentTime,
             });
             if (triedFallback) return;
@@ -546,26 +595,25 @@ export const usePlayerStore = defineStore(
         stalled: (position) => {
           void playbackManager.recoverFromStall(position);
         },
+        seeked: (currentTime) => {
+          state.seekTargetTime = null;
+          state.currentTime = currentTime;
+          engine.updateMediaPlaybackState(buildMediaState(state));
+        },
       };
       engine.setEvents(events);
-      window.electron?.mpv?.getState?.().then((mpvState) => {
-        if (!mpvState) return;
-        if (mpvState.playing && !state.isPlaying) {
+      window.electron?.player?.getState?.().then((playerState) => {
+        if (!playerState) return;
+        if (playerState.playing && !state.isPlaying) {
           state.isPlaying = true;
           state.isLoading = false;
           settingStore.syncPreventSleep(true);
         }
-        if (mpvState.duration > 0) state.duration = mpvState.duration;
-        if (mpvState.timePos > 0) state.currentTime = mpvState.timePos;
+        if (playerState.duration > 0) state.duration = playerState.duration;
+        if (playerState.timePos > 0) state.currentTime = playerState.timePos;
       });
     };
 
-    const notifySeekStart = () => {
-      state.isDraggingProgress = true;
-    };
-    const notifySeekEnd = () => {
-      state.isDraggingProgress = false;
-    };
     const setVolumeSmooth = async (value: number, durationMs?: number) => {
       await engine.fadeTo(value, durationMs ?? 1000);
       state.volume = engine.volume;
@@ -614,8 +662,6 @@ export const usePlayerStore = defineStore(
       clearPlaybackNotice,
       refreshCurrentTrack,
       init,
-      notifySeekStart,
-      notifySeekEnd,
       setVolumeSmooth,
       onPlayerEvent: playerEvents.on,
       getPlayerEventPayload,

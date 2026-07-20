@@ -1,7 +1,8 @@
 {
   "name": "echo-music",
-  "version": "2.2.8-beta.11",
+  "version": "2.2.9-beta.3",
   "description": "EchoMusic desktop client.",
+  "license": "GPL-3.0-only",
   "author": {
     "name": "hoowhoami",
     "email": "hoowhoami@qq.com"
@@ -54,7 +55,7 @@
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.7.0",
     "autoprefixer": "^10.5.0",
-    "electron": "43.0.0",
+    "electron": "43.1.1",
     "electron-builder": "26.8.1",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.1",
@@ -92,7 +93,6 @@
         ]
       }
     ],
-    "afterPack": "./build/afterPack.js",
     "files": [
       "dist",
       "dist-electron"
@@ -106,29 +106,15 @@
         ]
       },
       {
-        "from": "native/echo-mpv-player/echo-mpv-player.node",
-        "to": "native/echo-mpv-player.node",
+        "from": "native/echo-ffmpeg-player/echo-ffmpeg-player.node",
+        "to": "native/echo-ffmpeg-player.node",
         "filter": [
           "**/*"
         ]
       },
       {
-        "from": "native/echo-storage/echo-storage.node",
-        "to": "native/echo-storage.node",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "native/echo-spectrum-capture/echo-spectrum-capture.node",
-        "to": "native/echo-spectrum-capture.node",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "build/mpv",
-        "to": "mpv",
+        "from": "native/echo-sqlite-store/echo-sqlite-store.node",
+        "to": "native/echo-sqlite-store.node",
         "filter": [
           "**/*"
         ]
@@ -143,6 +129,21 @@
       {
         "from": "CHANGELOG.md",
         "to": "CHANGELOG.md"
+      },
+      {
+        "from": "LICENSE",
+        "to": "LICENSE"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "THIRD_PARTY_NOTICES.md"
+      },
+      {
+        "from": "LICENSES",
+        "to": "LICENSES",
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "server/module",
@@ -190,19 +191,47 @@
     },
     "deb": {
       "depends": [
-        "libasound2",
-        "libmpv2 | libmpv1"
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0",
+        "libasound2"
       ]
     },
     "pacman": {
-      "fpm": [
-        "-d",
-        "mpv"
+      "artifactName": "${productName}-${version}-${os}-${arch}.pkg.tar.zst",
+      "depends": [
+        "alsa-lib",
+        "c-ares",
+        "gtk3",
+        "libevent",
+        "libvpx",
+        "libxslt",
+        "libxss",
+        "minizip",
+        "nss",
+        "re2",
+        "snappy",
+        "libnotify",
+        "libappindicator-gtk3"
       ]
     },
     "rpm": {
       "depends": [
-        "mpv-libs"
+        "gtk3",
+        "libnotify",
+        "nss",
+        "libXScrnSaver",
+        "(libXtst or libXtst6)",
+        "xdg-utils",
+        "at-spi2-core",
+        "(libuuid or libuuid1)",
+        "alsa-lib"
       ]
     },
     "nsis": {

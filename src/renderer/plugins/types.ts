@@ -11,7 +11,7 @@ export interface EchoGlobalRuntime {
   executeCommand: (id: string, ...args: unknown[]) => unknown;
 }
 
-declare module '@vue/runtime-core' {
+declare module 'vue' {
   interface ComponentCustomProperties {
     $echo: EchoGlobalRuntime;
   }
